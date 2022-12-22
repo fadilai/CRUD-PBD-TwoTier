@@ -1,12 +1,11 @@
 <?php
 require("koneksi.php");
 
-$hub = open_connection();
-if ($hub){
+$pdo = open_connection();
+if ($pdo){
      echo ("Koneksi Berhasil :)");
 } else {
     echo("Koneksi Gagal!!!!");
 }
 
-mysqli_close($hub);
 ?>

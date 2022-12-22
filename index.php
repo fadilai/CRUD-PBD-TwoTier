@@ -60,7 +60,7 @@ $users = [
     ]
 ];
 
-    $hub = open_connection();
+    $pdo = open_connection();
     $a = @$_GET["a"];
     $id = @$_GET["id"];
     $sql = @$_POST["sql"];
@@ -95,7 +95,6 @@ $users = [
             login();
             break;
     }
-    mysqli_close($hub);
     ?>
 
 <?php
@@ -172,9 +171,9 @@ $users = [
             header('location:?a=');
         }
 
-        global $hub;
-        $query = "select * from dt_prodi";
-        $result = mysqli_query($hub, $query); ?>
+        global $pdo;
+        $query = $pdo->prepare ("select * from dt_prodi");
+        $query->execute()?>
 
     <div class="container p-5">
     <h2>Selamat datang, <?= $_SESSION['user']['name']; ?></h2>
@@ -203,7 +202,7 @@ $users = [
         
                     <tbody>
                         <?php $no=1; ?>
-                        <?php while($row = mysqli_fetch_array($result)) { ?>
+                        <?php while($row = $query->fetch()) { ?>
                         <tr>
                             <td><?=$no++; ?></td>
                             <td><?php echo $row['kdprodi']; ?></td>
@@ -306,10 +305,11 @@ $users = [
             echo '<script> alert("permission denied") </script>';
             header('location:?a=list');
         }
-        global $hub;
-        $query = "select * from dt_prodi where idprodi = $id";
-        $result = mysqli_query($hub, $query);
-        $row = mysqli_fetch_array($result); ?>
+        global $pdo;
+
+        $query = $pdo->prepare ("select * from dt_prodi where idprodi = $id");
+        $query->execute();
+        $row = $query->fetch()?>
 
     <div class="container p-5">
             <a href="index.php?a=list"class="btn btn-secondary mb-1">Batal</a>
@@ -362,10 +362,10 @@ $users = [
     <?php
     function hapus_data($id) {
         admin_only();
-        global $hub;
-        $query = " select * from dt_prodi where idprodi = $id";
-        $result = mysqli_query($hub, $query);
-        $row = mysqli_fetch_array($result); ?>
+        global $pdo;
+        $query = $pdo->prepare(" select * from dt_prodi where idprodi = $id");
+        $query->execute();
+        $row = $query->fetch()?>
 
     <div class="container p-5">
             <a href="index.php?a=list"class="btn btn-secondary mb-1">Batal</a>
@@ -418,68 +418,56 @@ $users = [
     <?php
         function create_prodi() {
             admin_only();
-            global $hub;
+            global $pdo;
             global $_POST;
-            $kdprodi = $_POST['kdprodi'];
-            $nmprodi = $_POST['nmprodi'];
 
-            $query = "INSERT INTO dt_prodi (kdprodi, nmprodi, akreditasi) 
-            VALUES";
-             $query = "INSERT INTO dt_prodi (kdprodi, nmprodi, akreditasi) VALUES ";
-             $query .= " ('". $_POST["kdprodi"]."', '".$_POST["nmprodi"]."', '".$_POST["akreditasi"]."')";
-             $row = mysqli_query($hub, "SELECT * FROM dt_prodi WHERE nmprodi = '$nmprodi' OR kdprodi = '$kdprodi'");
-             if (mysqli_num_rows($row) > 0) {
-                 echo "<script>alert('kode prodi atau nama prodi sudah ada di database');</script>";
-             } else {
-                 mysqli_query($hub, $query) or die(mysqli_error($hub));
-             }
+           $query = $pdo->prepare("INSERT INTO dt_prodi(kdprodi, nmprodi, akreditasi) VALUES (:kdprodi, :nmprodi, :akreditasi)");
+
+           $row =[
+            'kdprodi' => $_POST["kdprodi"],
+            'nmprodi' => $_POST["nmprodi"],
+            'akreditasi' => $_POST["akreditasi"],
+           ];
+
+           $query->execute($row);
+           return;
 
         }
 
         function update_prodi() {
             admin_only();
-            global $hub;
+            global $pdo;
             global $_POST;
-            $query = "UPDATE dt_prodi";
-            $query .= " SET kdprodi='" .$_POST["kdprodi"]."', nmprodi= '".$_POST["nmprodi"]."', akreditasi= '".$_POST["akreditasi"]."'";
-            $query .= " WHERE idprodi = ".$_POST["idprodi"];
 
-            $kdprodi = $_POST['kdprodi'];
-            $nmprodi = $_POST['nmprodi'];
-            $akreditasi = $_POST['akreditasi'];
-            $id = $_POST['idprodi'];
 
-            $cekNamaProdi = mysqli_query($hub, "SELECT * FROM dt_prodi WHERE nmprodi = '$nmprodi' AND idprodi = '$id'");
-            $cekNamaProdiLain = mysqli_query($hub, "SELECT * FROM dt_prodi WHERE nmprodi = '$nmprodi'");
-            $cekKodeProdi = mysqli_query($hub, "SELECT * FROM dt_prodi WHERE kdprodi = '$kdprodi' AND idprodi = '$id'");
-            $cekKodeProdiLain = mysqli_query($hub, "SELECT * FROM dt_prodi WHERE kdprodi = '$kdprodi'");
+            $query =$pdo->prepare("UPDATE dt_prodi set kdprodi = :kdprodi, nmprodi = :nmprodi, akreditasi = :akreditasi WHERE idprodi= :id");
 
-            if (mysqli_num_rows($cekNamaProdi) == 1 && mysqli_num_rows($cekKodeProdi) == 1) {
-                mysqli_query($hub, "UPDATE dt_prodi SET akreditasi='$akreditasi' WHERE idprodi='$id'");
-            } else if (mysqli_num_rows($cekKodeProdi) == 1 && mysqli_num_rows($cekNamaProdiLain) == 0) {
-                echo "<script>alert('nama prodi diperbarui');</script>";
-                mysqli_query($hub, "UPDATE dt_prodi SET nmprodi='$nmprodi', akreditasi='$akreditasi' WHERE idprodi='$id'");
-            } else if (mysqli_num_rows($cekNamaProdi) == 1 && mysqli_num_rows($cekKodeProdiLain) == 0) {
-                echo "<script>alert('kode prodi diperbarui');</script>";
-                mysqli_query($hub, "UPDATE dt_prodi SET kdprodi='$kdprodi', akreditasi='$akreditasi' WHERE idprodi='$id'");
-            } else if (mysqli_num_rows($cekKodeProdiLain) > 0 && mysqli_num_rows($cekNamaProdi) == 1) {
-                echo "<script>alert('kode prodi sudah ada');</script>";
-            } else if (mysqli_num_rows($cekNamaProdiLain) > 0 && mysqli_num_rows($cekKodeProdi) == 1) {
-                echo "<script>alert('nama prodi sudah ada');</script>";
-            } else {
-                echo "<script>alert('semua data berhasil diperbarui');</script>";
-                mysqli_query($hub, $query) or die (mysqli_error($hub));
-            }
+            $row =[
+                'kdprodi' => $_POST["kdprodi"],
+                'nmprodi' => $_POST["nmprodi"],
+                'akreditasi' => $_POST["akreditasi"],
+                'id' => $_POST["idprodi"],
+
+               ];
+
+               $query->execute($row);
+               return;
             
         }
         
         function delete_prodi() {
             admin_only();
-            global $hub;
+            global $pdo;
             global $_POST;
-            $query = " DELETE FROM dt_prodi";
-            $query .= " WHERE idprodi = ".$_POST["idprodi"];
-            mysqli_query($hub, $query) or die (mysqli_error($hub));
+
+            $query = $pdo->prepare("DELETE FROM dt_prodi WHERE idprodi = :idprodi");
+           
+            $row =[
+                ':idprodi' => $_POST["idprodi"]
+            ];
+           
+            $query->execute($row);
+               return;
         }
 
         function logout()

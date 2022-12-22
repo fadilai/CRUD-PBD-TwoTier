@@ -4,7 +4,6 @@
     $username="root";
     $passwoard="";
     $dbname="db_akademik";
-    $koneksi= mysqli_connect($hostname,$username,$passwoard,$dbname);
-    return $koneksi;
+    return $pdo = new PDO("mysql:hostname=$hostname;dbname=$dbname", $username, $passwoard, array(PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION));
  }
 ?>
